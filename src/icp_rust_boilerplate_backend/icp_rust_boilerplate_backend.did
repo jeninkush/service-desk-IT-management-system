@@ -1,0 +1,87 @@
+type AddTicketCommentPayload = record {
+  content : text;
+  ticket_id : nat64;
+  user_id : nat64;
+};
+type AssetType = variant { Scanner; Printer; Monitor; Laptop; Other; Desktop };
+type AssignTicketPayload = record { ticket_id : nat64; assigned_to : nat64 };
+type CalculateDepreciationPayload = record {
+  it_asset_id : nat64;
+  years : nat64;
+};
+type Comment = record { content : text; commented_at : nat64; user_id : nat64 };
+type ITAsset = record {
+  id : nat64;
+  asset_name : text;
+  asset_type : AssetType;
+  depreciation_rate : float64;
+  assigned_to : nat64;
+  purchase_date : nat64;
+  approx_value : float64;
+};
+type ITAssetPayload = record {
+  asset_name : text;
+  asset_type : AssetType;
+  depreciation_rate : float64;
+  assigned_to : nat64;
+  purchase_date : nat64;
+  approx_value : float64;
+};
+type Message = variant {
+  Error : text;
+  InvalidPayload : text;
+  NotFound : text;
+  Success : text;
+  UnAuthorized : text;
+};
+type Result = variant { Ok : Ticket; Err : Message };
+type Result_1 = variant { Ok : float64; Err : Message };
+type Result_2 = variant { Ok : ITAsset; Err : Message };
+type Result_3 = variant { Ok : User; Err : Message };
+type Result_4 = variant { Ok : vec ITAsset; Err : Message };
+type Result_5 = variant { Ok : vec Ticket; Err : Message };
+type Result_6 = variant { Ok : vec User; Err : Message };
+type Ticket = record {
+  id : nat64;
+  status : TicketStatus;
+  title : text;
+  description : text;
+  history : vec TicketHistory;
+  created_at : nat64;
+  created_by : nat64;
+  assigned_to : opt nat64;
+  priority : TicketPriority;
+  comments : vec Comment;
+};
+type TicketHistory = record { status : text; changed_at : nat64 };
+type TicketPayload = record {
+  title : text;
+  description : text;
+  priority : TicketPriority;
+};
+type TicketPriority = variant { Low; High; Medium };
+type TicketStatus = variant { Open; Closed; InProgress };
+type UpdateTicketStatusPayload = record { id : nat64; status : TicketStatus };
+type User = record {
+  id : nat64;
+  username : text;
+  role : UserRole;
+  created_at : nat64;
+};
+type UserPayload = record { username : text; role : UserRole };
+type UserRole = variant { User; Admin; ITSupport };
+service : {
+  add_ticket_comment : (AddTicketCommentPayload) -> (Result);
+  assign_ticket : (AssignTicketPayload, UserPayload) -> (Result);
+  calculate_depreciation : (CalculateDepreciationPayload) -> (Result_1);
+  create_it_asset : (ITAssetPayload, UserPayload) -> (Result_2);
+  create_ticket : (TicketPayload, UserPayload) -> (Result);
+  create_user : (UserPayload) -> (Result_3);
+  get_it_asset_by_id : (nat64) -> (Result_2) query;
+  get_it_assets : () -> (Result_4) query;
+  get_ticket_by_id : (nat64) -> (Result) query;
+  get_tickets : () -> (Result_5) query;
+  get_user_by_id : (nat64) -> (Result_3) query;
+  get_users : () -> (Result_6) query;
+  update_ticket_status : (UpdateTicketStatusPayload) -> (Result);
+}
