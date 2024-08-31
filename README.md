@@ -1,7 +1,7 @@
 
 # IT Support System
 
-This repository contains an IT Support System designed to manage IT assets, support tickets, and users. The system allows the creation and management of users, IT assets, and support tickets, providing a structured approach to IT support within an organization.
+This project contains an IT Support System designed to manage IT assets, support tickets, and users. The system allows the creation and management of users, IT assets, and support tickets, providing a structured approach to IT support within an organization.
 
 ## Features
 
