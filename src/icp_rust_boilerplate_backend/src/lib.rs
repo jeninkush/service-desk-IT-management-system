@@ -6,6 +6,7 @@ use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemor
 use ic_stable_structures::{BoundedStorable, Cell, DefaultMemoryImpl, StableBTreeMap, Storable};
 use std::{borrow::Cow, cell::RefCell};
 
+// Type Definitions
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 type IdCell = Cell<u64, Memory>;
 
@@ -42,6 +43,31 @@ enum TicketPriority {
     High,
 }
 
+// ITAsset Type Enum
+#[derive(
+    candid::CandidType, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Default, Debug,
+)]
+enum AssetType {
+    #[default]
+    Laptop,
+    Desktop,
+    Monitor,
+    Printer,
+    Scanner,
+    Other,
+}
+
+// Message Enum (Add this to handle errors and responses)
+#[derive(candid::CandidType, Deserialize, Serialize, Debug)]
+enum Message {
+    Success(String),
+    Error(String),
+    NotFound(String),
+    InvalidPayload(String),
+    UnAuthorized(String),
+}
+
+// Struct Definitions
 #[derive(candid::CandidType, Clone, Serialize, Deserialize, Default)]
 struct Ticket {
     id: u64,
@@ -51,7 +77,7 @@ struct Ticket {
     priority: TicketPriority,
     created_at: u64,
     created_by: u64,
-    assigned_to: Option<u64>, // ITSupport user ID
+    assigned_to: Option<u64>,
     history: Vec<TicketHistory>,
     comments: Vec<Comment>,
 }
@@ -69,20 +95,6 @@ struct Comment {
     commented_at: u64,
 }
 
-// Asset Type Enum
-#[derive(
-    candid::CandidType, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Default, Debug,
-)]
-enum AssetType {
-    #[default]
-    Laptop,
-    Desktop,
-    Monitor,
-    Printer,
-    Scanner,
-    Other,
-}
-
 #[derive(candid::CandidType, Clone, Serialize, Deserialize, Default)]
 struct ITAsset {
     id: u64,
@@ -90,8 +102,8 @@ struct ITAsset {
     asset_type: AssetType,
     purchase_date: u64,
     assigned_to: u64,
-    approx_value: f64,      // Approximate value of the asset
-    depreciation_rate: f64, // Annual depreciation rate as a percentage
+    approx_value: f64,
+    depreciation_rate: f64, // Annual depreciation rate
 }
 
 #[derive(candid::CandidType, Clone, Serialize, Deserialize, Default)]
@@ -102,6 +114,56 @@ struct User {
     created_at: u64,
 }
 
+// Define missing Payload Structs
+#[derive(candid::CandidType, Deserialize, Serialize)]
+struct TicketPayload {
+    title: String,
+    description: String,
+    priority: TicketPriority,
+}
+
+#[derive(candid::CandidType, Deserialize, Serialize)]
+struct ITAssetPayload {
+    asset_name: String,
+    asset_type: AssetType,
+    purchase_date: u64,
+    assigned_to: u64,
+    approx_value: f64,
+    depreciation_rate: f64,
+}
+
+#[derive(candid::CandidType, Deserialize, Serialize)]
+struct UserPayload {
+    username: String,
+    role: UserRole,
+}
+
+#[derive(candid::CandidType, Deserialize, Serialize)]
+struct CalculateDepreciationPayload {
+    it_asset_id: u64,
+    years: u64,
+}
+
+#[derive(candid::CandidType, Deserialize, Serialize)]
+struct AssignTicketPayload {
+    ticket_id: u64,
+    assigned_to: u64,
+}
+
+#[derive(candid::CandidType, Deserialize, Serialize)]
+struct AddTicketCommentPayload {
+    ticket_id: u64,
+    user_id: u64,
+    content: String,
+}
+
+#[derive(candid::CandidType, Deserialize, Serialize)]
+struct UpdateTicketStatusPayload {
+    id: u64,
+    status: TicketStatus,
+}
+
+// Storable and BoundedStorable Implementations
 impl Storable for Ticket {
     fn to_bytes(&self) -> Cow<[u8]> {
         Cow::Owned(Encode!(self).unwrap())
@@ -147,6 +209,7 @@ impl BoundedStorable for User {
     const IS_FIXED_SIZE: bool = false;
 }
 
+// Memory Management
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
         MemoryManager::init(DefaultMemoryImpl::default())
@@ -173,105 +236,33 @@ thread_local! {
     ));
 }
 
-// Ticket Payload
-#[derive(candid::CandidType, Deserialize, Serialize)]
-struct TicketPayload {
-    title: String,
-    description: String,
-    priority: TicketPriority,
+// Helper function to generate a new ID safely
+fn generate_id() -> u64 {
+    ID_COUNTER.with(|counter| {
+        let current_value = *counter.borrow().get();
+        counter.borrow_mut().set(current_value + 1).expect("ID counter increment failed");
+        current_value + 1
+    })
 }
 
-// ITAssetPayload
-#[derive(candid::CandidType, Deserialize, Serialize)]
-struct ITAssetPayload {
-    asset_name: String,
-    asset_type: AssetType,
-    purchase_date: u64,
-    assigned_to: u64,
-    approx_value: f64,
-    depreciation_rate: f64,
-}
+// Correct any redundant functions (remove duplicate assign_ticket definition)
 
-// UserPayload
-#[derive(candid::CandidType, Deserialize, Serialize)]
-struct UserPayload {
-    username: String,
-    role: UserRole,
-}
-
-// calculate_depreciation Payload
-#[derive(candid::CandidType, Deserialize, Serialize)]
-struct CalculateDepreciationPayload {
-    it_asset_id: u64,
-    years: u64,
-}
-
-// assign_ticket
-#[derive(candid::CandidType, Deserialize, Serialize)]
-struct AssignTicketPayload {
-    ticket_id: u64,
-    assigned_to: u64,
-}
-
-// add_ticket_comment
-#[derive(candid::CandidType, Deserialize, Serialize)]
-struct AddTicketCommentPayload {
-    ticket_id: u64,
-    user_id: u64,
-    content: String,
-}
-
-// update_ticket_status Payload
-#[derive(candid::CandidType, Deserialize, Serialize)]
-struct UpdateTicketStatusPayload {
-    id: u64,
-    status: TicketStatus,
-}
-
-// Meassge
-#[derive(candid::CandidType, Deserialize, Serialize)]
-enum Message {
-    Success(String),
-    Error(String),
-    NotFound(String),
-    InvalidPayload(String),
-    UnAuthorized(String),
-}
-
-#[ic_cdk::update]
-fn create_user(payload: UserPayload) -> Result<User, Message> {
-    if payload.username.is_empty() {
-        return Err(Message::InvalidPayload(
-            "Ensure 'username' and 'role' are provided.".to_string(),
-        ));
-    }
-
-    // Check if the user already exists
-    let user_exists = USER_STORAGE.with(|storage| {
-        storage
+// Function to get Tickets
+#[ic_cdk::query]
+fn get_tickets() -> Result<Vec<Ticket>, Message> {
+    TICKET_STORAGE.with(|storage| {
+        let tickets: Vec<Ticket> = storage
             .borrow()
             .iter()
-            .any(|(_, user)| user.username == payload.username)
-    });
-    if user_exists {
-        return Err(Message::Error("User already exists".to_string()));
-    }
+            .map(|(_, ticket)| ticket.clone())
+            .collect();
 
-    let id = ID_COUNTER
-        .with(|counter| {
-            let current_value = *counter.borrow().get();
-            counter.borrow_mut().set(current_value + 1)
-        })
-        .expect("Cannot increment ID counter");
-
-    let user = User {
-        id,
-        username: payload.username,
-        role: payload.role,
-        created_at: current_time(),
-    };
-    USER_STORAGE.with(|storage| storage.borrow_mut().insert(id, user.clone()));
-    Ok(user)
+        if tickets.is_empty() {
+            Err(Message::NotFound("No tickets found".to_string()))
+        } else {
+            Ok(tickets)
+        }
+    })
 }
 
 #[ic_cdk::query]
@@ -467,24 +458,6 @@ fn add_ticket_comment(payload: AddTicketCommentPayload) -> Result<Ticket, Messag
             Ok(ticket.clone())
         } else {
             Err(Message::NotFound("Ticket not found".to_string()))
-        }
-    })
-}
-
-// Function to get Tickets
-#[ic_cdk::query]
-fn get_tickets() -> Result<Vec<Ticket>, Message> {
-    TICKET_STORAGE.with(|storage| {
-        let tickets: Vec<Ticket> = storage
-            .borrow()
-            .iter()
-            .map(|(_, ticket)| ticket.clone())
-            .collect();
-
-        if tickets.is_empty() {
-            Err(Message::NotFound("No tickets found".to_string()))
-        } else {
-            Ok(tickets)
         }
     })
 }
