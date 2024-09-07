@@ -37,9 +37,9 @@ type Message = variant {
 type Result = variant { Ok : Ticket; Err : Message };
 type Result_1 = variant { Ok : float64; Err : Message };
 type Result_2 = variant { Ok : ITAsset; Err : Message };
-type Result_3 = variant { Ok : User; Err : Message };
-type Result_4 = variant { Ok : vec ITAsset; Err : Message };
-type Result_5 = variant { Ok : vec Ticket; Err : Message };
+type Result_3 = variant { Ok : vec ITAsset; Err : Message };
+type Result_4 = variant { Ok : vec Ticket; Err : Message };
+type Result_5 = variant { Ok : User; Err : Message };
 type Result_6 = variant { Ok : vec User; Err : Message };
 type Ticket = record {
   id : nat64;
@@ -76,12 +76,11 @@ service : {
   calculate_depreciation : (CalculateDepreciationPayload) -> (Result_1);
   create_it_asset : (ITAssetPayload, UserPayload) -> (Result_2);
   create_ticket : (TicketPayload, UserPayload) -> (Result);
-  create_user : (UserPayload) -> (Result_3);
   get_it_asset_by_id : (nat64) -> (Result_2) query;
-  get_it_assets : () -> (Result_4) query;
+  get_it_assets : () -> (Result_3) query;
   get_ticket_by_id : (nat64) -> (Result) query;
-  get_tickets : () -> (Result_5) query;
-  get_user_by_id : (nat64) -> (Result_3) query;
+  get_tickets : () -> (Result_4) query;
+  get_user_by_id : (nat64) -> (Result_5) query;
   get_users : () -> (Result_6) query;
   update_ticket_status : (UpdateTicketStatusPayload) -> (Result);
 }
